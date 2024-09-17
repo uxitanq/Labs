@@ -3,7 +3,7 @@
 #include <iomanip>
 
 int main (){
-  double k1;
+  int k1;
   std::cout << "k = ";
   std::cin >> k1;
   if (k1 <= 1){
