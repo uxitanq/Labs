@@ -4,6 +4,10 @@
 
 #define ll long long 
 
+void idk (ll sum){
+    std::cout << "sum = " << sum << std::endl; 
+}
+
 int main (){
   std::cout << "matrix size (n * n)";
   ll n;
@@ -22,12 +26,13 @@ int main (){
         a[i] = new ll[n]{};
     }
 
+  bool f = false;
+while (!f){
   std::cout << "Matrix (" << n << ", " << n << ") - ";
   ///ll* a = new ll[n][n];
   for (int i = 0; i < n; i++)
       for (int j = 0; j < n; j++)
           std::cin >> a[i][j];
-
 
   std::cout << std::endl;
 
@@ -38,6 +43,17 @@ int main (){
     std::cout << std::endl;
   }
   
+  for (int i = 0; i < n; i++){
+    for (int j = 0; j < n; j++){
+        if (a[i][j] != a[n-j-1][n - i - 1]){
+            std::cout << "a[i][j] should be equal to a[n-j-1][n - i - 1]. Pls enter your matrix again";
+            std::cout << std::endl;
+            f = true; 
+        }
+    }
+  }
+}
+
   ll nlm = 0;
   for (int i = 0; i < n; i++)
       for (int j = 0; j < n; j++){
@@ -66,7 +82,8 @@ int main (){
      }
   }
   
-  std::cout << "sum = " << sum << std::endl; 
+  idk(sum);
+
   for (unsigned i{}; i < n; i++){
         delete[] a[i];
     }
