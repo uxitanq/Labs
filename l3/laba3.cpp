@@ -43,15 +43,19 @@ while (!f){
     std::cout << std::endl;
   }
   
+  bool d = true;
   for (int i = 0; i < n; i++){
     for (int j = 0; j < n; j++){
-        if (a[i][j] != a[n-j-1][n - i - 1]){
+        if (a[i][j] != a[n-j-1][n - i - 1] && d == true){
             std::cout << "a[i][j] should be equal to a[n-j-1][n - i - 1]. Pls enter your matrix again";
             std::cout << std::endl;
-            f = true; 
+            f = false;
+            d = false;
         }
     }
   }
+  if (d)
+     f = true;
 }
 
   ll nlm = 0;
