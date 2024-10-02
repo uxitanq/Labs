@@ -14,10 +14,9 @@ int length(char *s){
 int main() {
     char s[301];
     cin.getline(s, 301);
-    int len = length (s);
     bool f = false;
     int start = 0, end = 0;
-    while (end < len){
+    while (end < length (s)){
         if (isspace(s[end])) {
             if (!f) {
                 bool name = true;
