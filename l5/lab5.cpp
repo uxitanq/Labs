@@ -16,7 +16,7 @@ int main() {
     bool lol = false;
     bool lmao = false;
     
-    for (std::size_t i = 0; i < s.size(); i++) {
+    for (std::size_t i = 0; i < s.size(); i++) 
       if (s[i] == '(' && !lol) {
         vibe = i;
         lol = true;
@@ -24,26 +24,23 @@ int main() {
         viber = i;
         lol = false;
 
-        for (std::size_t j = vibe + 1; j < viber; j++){
+        for (std::size_t j = vibe + 1; j < viber; j++)
           if (s[j] != ' ') {
             lmao = true;
             break;
           }
-        }
 
-        if (lmao) {
+        if (lmao) 
           fout << s << std::endl;
-        }
         lmao = false;
       }
-    }
 
     std::size_t skibiditoilet1 = 0;
     std::size_t skibiditoilet2 = 0;
     lol = false;
     lmao = false;
     
-    for (std::size_t i = 0; i < s.size(); i++) {
+    for (std::size_t i = 0; i < s.size(); i++) 
       if (s[i] == '[' && !lol) {
         skibiditoilet1 = i;
         lol = true;
@@ -51,19 +48,15 @@ int main() {
         skibiditoilet2 = i;
         lol = false;
 
-        for (std::size_t j = skibiditoilet1 + 1; j < skibiditoilet2; j++) {
+        for (std::size_t j = skibiditoilet1 + 1; j < skibiditoilet2; j++)
           if (s[j] != ' ') {
             lmao = true;
             break;
           }
-        }
 
-        if (lmao) {
-          kout << s << std::endl;
-        }
-        lmao = false; 
+        if (lmao) 
+          kout << s << std::endl; 
       }
-    }
   }
   return 0;
 }
