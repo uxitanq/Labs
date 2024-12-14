@@ -34,7 +34,7 @@ void fraction::simplify() {
 }
 
 fraction fraction::operator+(const fraction& other) const {
-    int newa = a * other.a + b * other.b;
+    int newa = a * other.b + b * other.a;
     int newb = b * other.b;
     return fraction(newa, newb);
 }

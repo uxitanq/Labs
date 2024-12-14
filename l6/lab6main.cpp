@@ -1,5 +1,6 @@
 #include <iostream>
 #include "D:\labs\l6\lab6.h"
+#include "D:\labs\l6\lab6.cpp"
 
 int main(){
     fraction f1(3, 4);
