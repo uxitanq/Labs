@@ -70,7 +70,6 @@ TEST(CalculatorTest, NestedParentheses) {
      ASSERT_DOUBLE_EQ(calc.calculate(), 13.0);
 }
 
-
 TEST(CalculatorTest, NegativeParentheses) {
      Calculator calc("-(1+1)");
      ASSERT_DOUBLE_EQ(calc.calculate(), -2.0);
@@ -78,8 +77,10 @@ TEST(CalculatorTest, NegativeParentheses) {
 TEST(CalculatorTest, InvalidExpression) {
     Calculator calc("5 +");
     ASSERT_THROW(calc.calculate(), std::runtime_error);
-    Calculator calc2("(5+2");
-    ASSERT_THROW(calc2.calculate(), std::runtime_error);
+}
+TEST(CalculatorTest, InvalidExpression2) {
+    Calculator calc("(5+2");
+    ASSERT_THROW(calc.calculate(), std::runtime_error);
 }
 TEST(CalculatorTest, DoubleNumbers) {
     Calculator calc("2.5 + 2.5");
