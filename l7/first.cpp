@@ -2,47 +2,43 @@
 #include "D:\labs\l7\student.h"
 #include "D:\labs\l7\first.h"
 
-first::first(const char* _name,int _course, int _group, int _CCN, int _gr[4]):
-Student(_name, _course, _group, _CCN){
-    for(int i = 0; i < 4; i++)
-        gr[i] = _gr[i];
-};
+first::first(const std::string& name, int course, const std::string& group, const std::string& studentCardNumber, const std::array<int, 4>& grades)
+    : Student(name, course, group, studentCardNumber), grades(grades) {}
 
-first::first(const first &other):Student(other){
-    for(int i = 0; i < 4; i++)
-        gr[i] = other.gr[i];
+first::first(const first& other)
+    : Student(other), grades(other.grades) {}
+
+first::~first (){
+    
 }
 
-first::~first(){};
+int first::getGrade(int index) const {
+    return grades[index];
+}
 
-int first::getGrade(int index) const{
-    if(index >=0 && index < 4)
-        return gr[index];
-    else 
-        return 1;
-};
+void first::setGrade(int index, int grade) {
+    grades[index] = grade;
+}
 
-void first::setGrade(int index, int grr){
-    if(index >= 0 && index < 4)
-        gr[index] = grr;
-};
+void first::printAverageGrade() const {
+    int sum = 0;
+    for (int grade : grades) 
+        sum += grade;
+    std::cout << "Average Grade after First Session: " << static_cast<double>(sum) / grades.size() << std::endl;
+}
 
-double first::average() const{
-    double sum = 0;
-    for(int i = 0; i < 4; i++)
-        sum +=gr[i];
-    return sum/4;
-};
+double first::getAverage() const {
+    int sum = 0;
+    for (int grade : grades) {
+        sum += grade;
+    }
+    return static_cast<double>(sum) / grades.size();
+}
 
-std::ostream& operator<<(std::ostream& out, const first &student){
-    out << "ID: " << student.getID() << std::endl;
-    out << "Name: " << student.getName() << std::endl;
-    out << "Course: " << student.getCourse() << std::endl;
-    out << "Group: " << student.getGroup() << std::endl;
-    out << "Credit card number: " << student.getCCN() << std::endl;
-    out << "Grades after 1st session: ";
-    for(int i = 0; i < 4; i++)
-        out << student.getGrade(i) << " " << std::endl;
-    out << std::endl;
-    return out;
+std::ostream& operator<<(std::ostream& os, const first& student) {
+    os << static_cast<const Student&>(student) << ", Grades: ";
+    for (int grade : student.grades) {
+        os << grade << " ";
+    }
+    return os;
 }

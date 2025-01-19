@@ -2,31 +2,38 @@
 #define STUDENT_H
 
 #include <iostream>
+#include <string>
 
-class Student{
-private: 
-   static int next_id;
+class Student {
 protected:
-   int id;
-   char* name;
-   int course;
-   int group;
-   int CCN;
+    static int uniqueIDCounter;
+    const int id;
+    std::string name;
+    int course;
+    std::string group;
+    const std::string studentCardNumber;
+
 public:
-   Student(const char* _name,int _course, int _group, int _CCN);
-   Student(const Student &other);
-   Student() = delete;
+    Student(const std::string& name, int course, const std::string& group, const std::string& studentCardNumber);
+    Student(const Student& other);
+
+    void setName(const std::string& name);
+    void setCourse(int course);
+    void setGroup(const std::string& group);
+    Student() = delete;
    ~Student();
-   void setName(const char* _name);
-   const char* getName() const;
-   void setCourse(int _course);
-   int getCourse() const;
-   void setGroup(int _group);
-   int getGroup() const;
-   int getCCN() const;
-   int getID() const;
-   virtual double average() const = 0;
-   friend std::ostream& operator<<(std::ostream &out, const Student &student);
+
+    std::string getName() const;
+    int getCourse() const;
+    std::string getGroup() const;
+    int getID() const;
+    std::string getStudentCardNumber() const;
+
+    virtual void printAverageGrade() const = 0;
+
+    virtual double getAverage() const = 0;
+
+    friend std::ostream& operator<<(std::ostream& os, const Student& student);
 };
 
-#endif 
+#endif

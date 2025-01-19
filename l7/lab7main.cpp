@@ -7,29 +7,21 @@
 #include <iostream>
 #include <vector>
 #include <numeric>
+#include <iomanip>
 
 int main() {
-    int gr1[] = {4, 4, 4, 4};
-    int gr2[] = {4, 4, 4, 4, 4};
-    int gr3[] = {5, 5, 5, 5};
-    int gr4[] = {5, 5, 5, 5, 5};
-    int gr5[] = {3, 3, 3, 3};
-    int gr6[] = {3, 3, 3, 3, 3};
-    second student1("Karpovich", 1, 3, 4444, gr1, gr2);
-    second student2("Kazantseva", 1, 2, 5555, gr3, gr4);
-    std::cout << student1;
-    std::cout << student2 << std::endl;
-    Student* students[3];
-    students[0] = new first("Sigma", 1, 2, 12345, gr5);
-    students[1] = new second("Tyler Durden", 1, 2, 666, gr3, gr4);
-    students[2] = new second("Kafka", 1, 2, 777, gr1, gr6);
-    double lol = 0;
-    for(int i = 0; i < 3; i++){
-      std::cout << *students[i] << std::endl;
-      lol += students[i] -> average();
-      delete students[i];
+    first student1("Alice", 1, "1", "123A", {5, 4, 8, 10});
+    second student2("Bob", 2, "3", "456B", {7, 8, 8, 5}, {8, 8, 9, 8, 7});
+
+    std::vector<Student*> students = {&student1, &student2};
+    
+    double av = 0;
+
+    for (Student* student : students) {
+        std::cout << *student << std::endl;
+        student->printAverageGrade();
+        av+= student->getAverage();
     }
-    lol /= 3;
-    std::cout << "Average grade of group: " << lol << std::endl;
+    std::cout << std::fixed <<std::setprecision (2) << "Group average is " << av / 2 << std::endl;
     return 0;
 }

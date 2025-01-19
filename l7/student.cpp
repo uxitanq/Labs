@@ -6,68 +6,52 @@
 #include <cstdlib>
 #include <cstring>
 
-int Student::next_id = 1;
+int Student::uniqueIDCounter = 0;
 
-int randID(){
-    srand(time(0));
-    return rand()^time(0);
-};
+Student::Student(const std::string& name, int course, const std::string& group, const std::string& studentCardNumber)
+    : id(++uniqueIDCounter), name(name), course(course), group(group), studentCardNumber(studentCardNumber) {}
 
-
-Student::Student(const char* _name,int _course, int _group, int _CCN): 
- course(_course), group(_group), CCN(_CCN), name(new char[strlen(_name) + 1]) {
-   strcpy(name, _name);
-   id = next_id;
-   next_id++;
-}
-
-
-Student::Student(const Student& other):id(other.id), course(other.course), group(other.group), CCN(other.CCN){
-name = new char[strlen(other.name) + 1];
-strcpy(name, other.name);
-};
+Student::Student(const Student& other)
+    : id(++uniqueIDCounter), name(other.name), course(other.course), group(other.group), studentCardNumber(other.studentCardNumber) {}
 
 Student::~Student(){
-    delete[]name;
+
 };
 
-void Student::setName(const char* _name){
-    delete[]name;
-    name = new char[strlen(_name) + 1];
-    strcpy(name, _name);
-};
+void Student::setName(const std::string& name) {
+    this->name = name;
+}
 
-const char* Student::getName() const{
+void Student::setCourse(int course) {
+    this->course = course;
+}
+
+void Student::setGroup(const std::string& group) {
+    this->group = group;
+}
+
+std::string Student::getName() const {
     return name;
-};
+}
 
-void Student::setCourse(int _course){
-    course = _course;
-};
-
-int Student::getCourse() const{
+int Student::getCourse() const {
     return course;
-};
+}
 
-void Student::setGroup(int _group){
-    group = _group;
-};
-
-int Student::getGroup() const{
+std::string Student::getGroup() const {
     return group;
-};
-int Student::getCCN() const{
-    return CCN;
-};
-int Student::getID() const{
-    return id;
-};
+}
 
-std::ostream& operator<<(std::ostream& out, const Student &student){
-   out << "ID: " << student.getID() << std::endl;
-   out << "Name of student: " << student.getName() << std::endl;
-   out << "Course: " << student.getCourse() << std::endl;
-   out << "Group: " << student.getGroup() << std::endl;
-   out << "Credit card number: " << student.getCCN() << std::endl;
-   return out;
-};
+int Student::getID() const {
+    return id;
+}
+
+std::string Student::getStudentCardNumber() const {
+    return studentCardNumber;
+}
+
+std::ostream& operator<<(std::ostream& os, const Student& student) {
+    os << "ID: " << student.id << ", Name: " << student.name << ", Course: " << student.course
+       << ", Group: " << student.group << ", Student Card Number: " << student.studentCardNumber;
+    return os;
+}
