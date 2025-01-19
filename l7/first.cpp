@@ -24,7 +24,7 @@ void first::printAverageGrade() const {
     int sum = 0;
     for (int grade : grades) 
         sum += grade;
-    std::cout << "Average Grade after First Session: " << static_cast<double>(sum) / grades.size() << std::endl;
+    std::cout << "Average Grade after First Session: " << double(sum) / grades.size() << std::endl;
 }
 
 double first::getAverage() const {
@@ -32,7 +32,7 @@ double first::getAverage() const {
     for (int grade : grades) {
         sum += grade;
     }
-    return static_cast<double>(sum) / grades.size();
+    return double(sum) / grades.size();
 }
 
 std::ostream& operator<<(std::ostream& os, const first& student) {
