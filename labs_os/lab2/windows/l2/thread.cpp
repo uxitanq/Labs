@@ -126,8 +126,8 @@ int main() {
     std::cout << "n = ";
     std::cin >> n;
     
-    if (n < 10) {
-        std::cout << "Matrix size must be at least 10 * 10" << std::endl;
+    if (n < 5) {
+        std::cout << "Matrix size must be at least 5 * 5" << std::endl;
         return 1;
     }
     
