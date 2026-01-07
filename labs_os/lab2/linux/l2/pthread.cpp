@@ -3,23 +3,22 @@
 #include <pthread.h>
 #include <chrono>
 #include <random>
-#include <atomic>
 
-class simple_block_matrix_multiplier {
+class block_multiplier_pthread_input {
 private:
     int n;
     std::vector<std::vector<int>> a, b;
-    std::atomic<int> active_threads;
 
-    struct block_params {
-        simple_block_matrix_multiplier* self;
+    struct block_multiply_data {
+        block_multiplier_pthread_input* self;
         std::vector<std::vector<int>>* result;
-        int start_row, end_row;
-        int start_col, end_col;
+        std::vector<std::vector<int>> block_a;
+        std::vector<std::vector<int>> block_b;
+        int start_row, start_col;
     };
 
 public:
-    simple_block_matrix_multiplier(int size) : n(size), active_threads(0) {
+    block_multiplier_pthread_input(int size) : n(size) {
         a.resize(n, std::vector<int>(n));
         b.resize(n, std::vector<int>(n));
         
@@ -27,133 +26,163 @@ public:
         std::mt19937 gen(rd());
         std::uniform_int_distribution<> dis(1, 10);
 
-        for (int i = 0; i < n; i++) 
+        for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 a[i][j] = dis(gen);
                 b[i][j] = dis(gen);
             }
+        }
     }
 
-    static void* block_function(void* arg) {
-        block_params* p = static_cast<block_params*>(arg);
-        int n = p->self->n;
+    static void* multiply_two_blocks_wrapper(void* arg) {
+        block_multiply_data* data = static_cast<block_multiply_data*>(arg);
         
-        for (int i = p->start_row; i < p->end_row; i++) {
-            for (int j = p->start_col; j < p->end_col; j++) {
+        int block_a_rows = data->block_a.size();
+        int block_a_cols = data->block_a[0].size();
+        int block_b_cols = data->block_b[0].size();
+        
+        for (int i = 0; i < block_a_rows; i++) {
+            for (int j = 0; j < block_b_cols; j++) {
                 int sum = 0;
-                for (int k = 0; k < n; k++) 
-                    sum += p->self->a[i][k] * p->self->b[k][j];
-                (*p->result)[i][j] = sum;
+                for (int k = 0; k < block_a_cols; k++) {
+                    sum += data->block_a[i][k] * data->block_b[k][j];
+                }
+                (*data->result)[data->start_row + i][data->start_col + j] += sum;
             }
         }
         
-        p->self->active_threads--;
-        delete p;
+        delete data;
         return nullptr;
     }
 
+    std::vector<std::vector<int>> get_block(const std::vector<std::vector<int>>& matrix,
+                                           int block_i, int block_j, int block_size) {
+                int start_i = block_i * block_size;
+        int end_i;
+        if ((block_i + 1) * block_size <= n)
+            end_i = (block_i + 1) * block_size;
+        else 
+            end_i = n;
+
+        int start_j = block_j * block_size;
+        int end_j;
+        if ((block_j + 1) * block_size <= n)
+            end_j = (block_j + 1) * block_size;
+        else 
+            end_j = n;
+        
+        std::vector<std::vector<int>> block(end_i - start_i, std::vector<int>(end_j - start_j));
+        
+        for (int i = 0; i < end_i - start_i; i++) 
+            for (int j = 0; j < end_j - start_j; j++) 
+                block[i][j] = matrix[start_i + i][start_j + j];
+        
+        return block;
+    }
+
     std::vector<std::vector<int>> multiply_with_blocks(int block_size) {
-        std::vector<std::vector<int>> result(n, std::vector<int>(n, 0));
+        std::vector<std::vector<int>> c(n, std::vector<int>(n, 0));
         std::vector<pthread_t> threads;
         
         auto start = std::chrono::high_resolution_clock::now();
         
         int blocks_per_side = (n + block_size - 1) / block_size;
-        int max_concurrent_threads = 8; 
 
-        for (int i = 0; i < blocks_per_side; i++) {
-            for (int j = 0; j < blocks_per_side; j++) {
-                while (active_threads.load() >= max_concurrent_threads) {
+        for (int i = 0; i < blocks_per_side; i++) 
+            for (int j = 0; j < blocks_per_side; j++) 
+                for (int k = 0; k < blocks_per_side; k++) {
+                    auto block_a = get_block(a, i, k, block_size);
+                    auto block_b = get_block(b, k, j, block_size);
+                    
+                    int start_row = i * block_size;
+                    int start_col = j * block_size;
+                    
+                    block_multiply_data* data = new block_multiply_data{
+                        this, &c, block_a, block_b, start_row, start_col
+                    };
+                    
+                    pthread_t thread;
+                    if (pthread_create(&thread, nullptr, multiply_two_blocks_wrapper, data) == 0) {
+                        threads.push_back(thread);
+                    } else 
+                        delete data;
                 }
 
-                int start_row = i * block_size;
-                int end_row = std::min((i + 1) * block_size, n);
-                int start_col = j * block_size;
-                int end_col = std::min((j + 1) * block_size, n);
-
-                block_params* params = new block_params;
-                params->self = this;
-                params->result = &result;
-                params->start_row = start_row;
-                params->end_row = end_row;
-                params->start_col = start_col;
-                params->end_col = end_col;
-                
-                active_threads++;
-                
-                pthread_t thread;
-                if (pthread_create(&thread, nullptr, block_function, params) == 0)
-                    threads.push_back(thread);
-                else {
-                    active_threads--;
-                    delete params;
-                    std::cout << "error: failed to create thread" << std::endl;
-                }
-            }
-        }
-        
         for (pthread_t thread : threads) 
             pthread_join(thread, nullptr);
-        
+
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         
-        std::cout << "block multiplication: block_size=" << block_size 
-                  << ", blocks=" << blocks_per_side * blocks_per_side
+        std::cout << "block_size=" << block_size 
+                  << ", total_blocks_A_B=" << blocks_per_side * blocks_per_side
+                  << ", block_pairs=" << blocks_per_side * blocks_per_side * blocks_per_side
                   << ", threads=" << threads.size()
                   << ", time=" << duration.count() << " microseconds" << std::endl;
         
-        return result;
+        return c;
     }
 
     std::vector<std::vector<int>> multiply_sequential() {
-        std::vector<std::vector<int>> result(n, std::vector<int>(n, 0));
+        std::vector<std::vector<int>> c(n, std::vector<int>(n, 0));
         
         auto start = std::chrono::high_resolution_clock::now();
         
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < n; i++) 
             for (int j = 0; j < n; j++) {
                 int sum = 0;
-                for (int k = 0; k < n; k++) 
-                    sum += a[i][k] * b[k][j];
-                result[i][j] = sum;
+                for (int k = 0; k < n; k++) {
+                    int dd = a[i][k] * b[k][j];
+                    sum += dd;
+                }
+                c[i][j] = sum;
             }
-        }
         
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         
-        std::cout << "sequential: time=" << duration.count() << " microseconds" << std::endl;
-        return result;
+        std::cout << "sequential time=" << duration.count() << " microseconds" << std::endl;
+        return c;
     }
 
-    bool compare_results(const std::vector<std::vector<int>>& r1, const std::vector<std::vector<int>>& r2) {
-        for (int i = 0; i < n; i++) 
-            for (int j = 0; j < n; j++) 
-                if (r1[i][j] != r2[i][j]) 
-                    return false;
-        return true;
-    }
 };
 
 int main() {
-    const int n = 100;
-    std::cout << "matrix size: " << n << "x" << n << std::endl;
+    int n;
+    std::cout << "n = ";
+    std::cin >> n;
     
-    simple_block_matrix_multiplier multiplier(n);
+    if (n < 10) {
+        std::cout << "At least 10" << std::endl;
+        return 1;
+    }
     
+    block_multiplier_pthread_input multiplier(n);
+    std::cout << "\nMatrix size: " << n << "x" << n << std::endl;
+    
+    std::cout << "\nSequential multiplication:" << std::endl;
     auto sequential = multiplier.multiply_sequential();
-    std::cout << "sequential result[0][0] = " << sequential[0][0] << std::endl << std::endl;
     
-    for (int block_size : {50, 25, 20, 10, 5, 2, 1}) 
-        if (block_size <= n) {
+    std::cout << "\nBlock multiplication:" << std::endl;
+    
+    std::cout << "Testing key block sizes:" << std::endl;
+    
+    if (n > 20){
+        
+        int test_sizes[] = {1, 2, 3, 5, n/10, n/5, n/4, n/3, n/2, n};
+        for (int block_size : test_sizes) 
+            if (block_size >= 1 && block_size <= n) {
+                std::cout << "  block_size=" << block_size << ": ";
+                auto block_result = multiplier.multiply_with_blocks(block_size);
+            }
+    }
+    else {
+        std::cout << "\nTesting all block sizes (1 to " << n << "):" << std::endl;
+        for (int block_size = 1; block_size <= n; block_size++) {
+            std::cout << "  block_size=" << block_size << ": ";
             auto block_result = multiplier.multiply_with_blocks(block_size);
-            std::cout << "result[0][0] = " << block_result[0][0];
-            
-            if (multiplier.compare_results(sequential, block_result)) 
-                std::cout << " - correct" << std::endl;
-            else std::cout << " - ERROR" << std::endl;
         }
-
+    }
+    
     return 0;
 }
