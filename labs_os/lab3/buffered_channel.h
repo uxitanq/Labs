@@ -63,4 +63,4 @@ private:
     std::condition_variable recv_cv_;
 };
 
-#endif // BUFFERED_CHANNEL_H_
+#endif 

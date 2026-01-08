@@ -1,9 +1,9 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "D:\\labs\\Operation Systems\\MathLibrariesSolution\\MainApp\\",
+  "WorkspaceRootPath": "D:\\labs\\Labs\\labs_os\\lab1\\windows\\MathLibrariesSolution\\MainApp\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{6C7FD012-8902-4DA4-800E-D81B34D70A99}|MainApp.vcxproj|D:\\labs\\Operation Systems\\MathLibrariesSolution\\MainApp\\MainApp.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "AbsoluteMoniker": "D:0:0:{6C7FD012-8902-4DA4-800E-D81B34D70A99}|MainApp.vcxproj|D:\\labs\\Labs\\labs_os\\lab1\\windows\\MathLibrariesSolution\\MainApp\\MainApp.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{6C7FD012-8902-4DA4-800E-D81B34D70A99}|MainApp.vcxproj|solutionrelative:MainApp.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
   ],
@@ -24,11 +24,11 @@
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "MainApp.cpp",
-              "DocumentMoniker": "D:\\labs\\Operation Systems\\MathLibrariesSolution\\MainApp\\MainApp.cpp",
+              "DocumentMoniker": "D:\\labs\\Labs\\labs_os\\lab1\\windows\\MathLibrariesSolution\\MainApp\\MainApp.cpp",
               "RelativeDocumentMoniker": "MainApp.cpp",
-              "ToolTip": "D:\\labs\\Operation Systems\\MathLibrariesSolution\\MainApp\\MainApp.cpp",
+              "ToolTip": "D:\\labs\\Labs\\labs_os\\lab1\\windows\\MathLibrariesSolution\\MainApp\\MainApp.cpp",
               "RelativeToolTip": "MainApp.cpp",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAuAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAAYAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-11-10T16:28:35.851Z",
               "EditorCaption": ""

@@ -3,18 +3,22 @@
 #include <windows.h>
 #include <chrono>
 #include <random>
+#include <mutex>
 
 class block_multiplier_windows_input {
 private:
     int n;
     std::vector<std::vector<int>> a, b;
+    std::mutex result_mutex;
 
     struct block_multiply_data {
         block_multiplier_windows_input* self;
         std::vector<std::vector<int>>* result;
         std::vector<std::vector<int>> block_a;
         std::vector<std::vector<int>> block_b;
-        int start_row, start_col;
+        int start_row_a, start_col_a;
+        int start_row_b, start_col_b; 
+        int start_row_c, start_col_c; 
     };
 
 public:
@@ -37,8 +41,11 @@ public:
         block_multiply_data* data = (block_multiply_data*)param;
         
         int block_a_rows = data->block_a.size();
-        int block_a_cols = data->block_a[0].size();
-        int block_b_cols = data->block_b[0].size();
+        int block_a_cols = (block_a_rows > 0) ? data->block_a[0].size() : 0;
+        int block_b_cols = (data->block_b.size() > 0) ? data->block_b[0].size() : 0;
+        
+        std::vector<std::vector<int>> local_result(block_a_rows, 
+                                                   std::vector<int>(block_b_cols, 0));
         
         for (int i = 0; i < block_a_rows; i++) {
             for (int j = 0; j < block_b_cols; j++) {
@@ -47,7 +54,23 @@ public:
                     int dd = data->block_a[i][k] * data->block_b[k][j];
                     sum += dd;
                 }
-                (*data->result)[data->start_row + i][data->start_col + j] += sum;
+                local_result[i][j] = sum;
+            }
+        }
+        
+        {
+            std::lock_guard<std::mutex> lock(data->self->result_mutex);
+            for (int i = 0; i < block_a_rows; i++) {
+                for (int j = 0; j < block_b_cols; j++) {
+                    int global_i = data->start_row_c + i;
+                    int global_j = data->start_col_c + j;
+                    
+                    if (global_i < data->result->size()) {
+                        if (global_j < (*data->result)[global_i].size()) {
+                            (*data->result)[global_i][global_j] += local_result[i][j];
+                        }
+                    }
+                }
             }
         }
         
@@ -56,22 +79,25 @@ public:
     }
 
     std::vector<std::vector<int>> get_block(const std::vector<std::vector<int>>& matrix,
-                                           int block_i, int block_j, int block_size) {
-        int start_i = block_i * block_size;
+                                           int block_i, int block_j, int block_size,
+                                           int& start_i, int& start_j) {
+
+        start_i = block_i * block_size;
         int end_i;
-        if ((block_i + 1) * block_size <= n)
-            end_i = (block_i + 1) * block_size;
+        if (start_i + block_size <= n)
+            end_i = start_i + block_size;
         else 
             end_i = n;
 
-        int start_j = block_j * block_size;
+        start_j = block_j * block_size;
         int end_j;
-        if ((block_j + 1) * block_size <= n)
-            end_j = (block_j + 1) * block_size;
+        if (start_j + block_size <= n)
+            end_j = start_j + block_size;
         else 
-            end_j = n;
+            end_j = n;                  
         
-        std::vector<std::vector<int>> block(end_i - start_i, std::vector<int>(end_j - start_j));
+        std::vector<std::vector<int>> block(end_i - start_i, 
+                                           std::vector<int>(end_j - start_j));
         
         for (int i = 0; i < end_i - start_i; i++) 
             for (int j = 0; j < end_j - start_j; j++) 
@@ -91,17 +117,29 @@ public:
         for (int i = 0; i < blocks_per_side; i++) {
             for (int j = 0; j < blocks_per_side; j++) {
                 for (int k = 0; k < blocks_per_side; k++) {
-                    auto block_a = get_block(a, i, k, block_size);
-                    auto block_b = get_block(b, k, j, block_size);
+                    int start_row_a, start_col_a, start_row_b, start_col_b;
                     
-                    int start_row = i * block_size;
-                    int start_col = j * block_size;
+                    auto block_a = get_block(a, i, k, block_size, start_row_a, start_col_a);
+                    auto block_b = get_block(b, k, j, block_size, start_row_b, start_col_b);
+                    
+                    if (block_a.empty() || block_a[0].empty() || 
+                        block_b.empty() || block_b[0].empty()) {
+                        continue;
+                    }
+                    
+                    int start_row_c = i * block_size;
+                    int start_col_c = j * block_size;
                     
                     block_multiply_data* data = new block_multiply_data{
-                        this, &c, block_a, block_b, start_row, start_col
+                        this, &c, block_a, block_b,
+                        start_row_a, start_col_a,
+                        start_row_b, start_col_b,
+                        start_row_c, start_col_c 
                     };
                     
-                    HANDLE thread = CreateThread(NULL, 0, multiply_two_blocks_wrapper, data, 0, NULL);
+                    HANDLE thread = CreateThread(NULL, 0, 
+                                                 multiply_two_blocks_wrapper, 
+                                                 data, 0, NULL);
                     if (thread) 
                         threads.push_back(thread);
                     else 
@@ -155,8 +193,8 @@ int main() {
     std::cout << "n = ";
     std::cin >> n;
     
-    if (n < 10) {
-        std::cout << "Matrix size must be at least 10 * 10" << std::endl;
+    if (n < 5) {
+        std::cout << "Matrix size must be at least 5 * 5" << std::endl;
         return 1;
     }
     
@@ -168,9 +206,11 @@ int main() {
     
     std::cout << "\nBlock multiplication:" << std::endl;
     
-    int step = 1;
-    if (n > 20) 
-        step = n / 20;
+    int step;
+
+    if (n/20 < 1)
+        step = 1;
+    else step = n/20;
         
     for (int block_size = 1; block_size <= n; block_size += step) {
         std::cout << "Testing block size " << block_size << ": ";

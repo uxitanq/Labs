@@ -156,52 +156,46 @@ int main() {
     CreatePipe(&hPipeP_S_Read, &hPipeP_S_Write, &sa, 0);
     CreatePipe(&hPipeS_Out_Read, &hPipeS_Out_Write, &sa, 0);
     
-    PROCESS_INFORMATION piM, piA, piP, piS;
-    
-    std::thread threadS(ProcessS, hPipeP_S_Read, hPipeS_Out_Write);
-    
-    std::thread threadP(ProcessP, hPipeA_P_Read, hPipeP_S_Write);
-    
-    std::thread threadA(ProcessA, hPipeM_A_Read, hPipeA_P_Write);
-    
-    std::thread threadM(ProcessM, GetStdHandle(STD_INPUT_HANDLE), hPipeM_A_Write);
-    
-    Sleep(100);
-    
-    std::cout << "Enter numbers separated by spaces (end with Enter): ";
+    std::cout << "Enter numbers separated by spaces: ";
     std::string input;
     std::getline(std::cin, input);
     
-    HANDLE hInputPipe = GetStdHandle(STD_INPUT_HANDLE);
-    WriteFile(hPipeM_A_Write, input.c_str(), input.size(), NULL, NULL);
-    std::string eol = "\n";
-    WriteFile(hPipeM_A_Write, eol.c_str(), eol.size(), NULL, NULL);
-    
-    threadM.join();
-    threadA.join();
-    threadP.join();
-    threadS.join();
-
-    char outputBuffer[BUFFER_SIZE];
-    DWORD bytesRead;
-    
     std::cout << "\nProcessing chain: M(x*7) -> A(x+14) -> P(x^3) -> S(sum)\n";
     std::cout << "Input numbers: " << input << std::endl;
+    
+    std::thread threadS(ProcessS, hPipeP_S_Read, hPipeS_Out_Write);
+    std::thread threadP(ProcessP, hPipeA_P_Read, hPipeP_S_Write);
+    std::thread threadA(ProcessA, hPipeM_A_Read, hPipeA_P_Write);
+    
+    DWORD bytesWritten;
+    WriteFile(hPipeM_A_Write, input.c_str(), input.size(), &bytesWritten, NULL);
+    
+    std::string delimiter = " \n";
+    WriteFile(hPipeM_A_Write, delimiter.c_str(), delimiter.size(), &bytesWritten, NULL);
+    
+    CloseHandle(hPipeM_A_Write);
+
+    threadA.join();
+    threadP.join(); 
+    threadS.join();  
+
     std::cout << "\nResult: ";
     
-    if (ReadFile(hPipeS_Out_Read, outputBuffer, BUFFER_SIZE - 1, &bytesRead, NULL) && bytesRead > 0) {
-        outputBuffer[bytesRead] = '\0';
-        std::cout << outputBuffer;
+    char buffer[BUFFER_SIZE];
+    DWORD bytesRead;
+    std::string result;
+    
+    while (ReadFile(hPipeS_Out_Read, buffer, BUFFER_SIZE - 1, &bytesRead, NULL) && bytesRead > 0) {
+        buffer[bytesRead] = '\0';
+        result += buffer;
     }
     
+    std::cout << result;
+    
     CloseHandle(hPipeM_A_Read);
-    CloseHandle(hPipeM_A_Write);
     CloseHandle(hPipeA_P_Read);
-    CloseHandle(hPipeA_P_Write);
     CloseHandle(hPipeP_S_Read);
-    CloseHandle(hPipeP_S_Write);
     CloseHandle(hPipeS_Out_Read);
-    CloseHandle(hPipeS_Out_Write);
     
     std::cout << "\nPress Enter to exit...";
     std::cin.get();
