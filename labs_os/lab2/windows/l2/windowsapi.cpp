@@ -4,12 +4,17 @@
 #include <chrono>
 #include <random>
 #include <mutex>
+#include <queue>
+#include <semaphore>
 
 class block_multiplier_windows_input {
 private:
     int n;
     std::vector<std::vector<int>> a, b;
     std::mutex result_mutex;
+    std::mutex queue_mutex;
+    std::queue<HANDLE> completed_threads;
+    HANDLE semaphore;
 
     struct block_multiply_data {
         block_multiplier_windows_input* self;
@@ -35,6 +40,13 @@ public:
                 a[i][j] = dis(gen);
                 b[i][j] = dis(gen);
             }
+        
+        // Ограничиваем количество одновременно работающих потоков
+        semaphore = CreateSemaphore(NULL, 16, 16, NULL); // Максимум 16 потоков одновременно
+    }
+
+    ~block_multiplier_windows_input() {
+        CloseHandle(semaphore);
     }
 
     static DWORD WINAPI multiply_two_blocks_wrapper(LPVOID param) {
@@ -72,6 +84,15 @@ public:
                     }
                 }
             }
+        }
+        
+        // Освобождаем семафор после завершения работы
+        ReleaseSemaphore(data->self->semaphore, 1, NULL);
+        
+        // Сохраняем handle потока для последующего закрытия
+        {
+            std::lock_guard<std::mutex> lock(data->self->queue_mutex);
+            data->self->completed_threads.push(GetCurrentThread());
         }
         
         delete data;
@@ -117,6 +138,9 @@ public:
         for (int i = 0; i < blocks_per_side; i++) {
             for (int j = 0; j < blocks_per_side; j++) {
                 for (int k = 0; k < blocks_per_side; k++) {
+                    // Ждем, пока освободится место для нового потока
+                    WaitForSingleObject(semaphore, INFINITE);
+                    
                     int start_row_a, start_col_a, start_row_b, start_col_b;
                     
                     auto block_a = get_block(a, i, k, block_size, start_row_a, start_col_a);
@@ -124,6 +148,7 @@ public:
                     
                     if (block_a.empty() || block_a[0].empty() || 
                         block_b.empty() || block_b[0].empty()) {
+                        ReleaseSemaphore(semaphore, 1, NULL);
                         continue;
                     }
                     
@@ -142,16 +167,21 @@ public:
                                                  data, 0, NULL);
                     if (thread) 
                         threads.push_back(thread);
-                    else 
+                    else {
                         delete data;
+                        ReleaseSemaphore(semaphore, 1, NULL);
+                    }
                 }
             }
         }
 
+        // Ожидаем завершения всех созданных потоков
         WaitForMultipleObjects(threads.size(), threads.data(), TRUE, INFINITE);
 
-        for (HANDLE thread : threads) 
+        // Закрываем handles потоков
+        for (HANDLE thread : threads) {
             CloseHandle(thread);
+        }
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
