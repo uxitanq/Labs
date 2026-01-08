@@ -15,30 +15,29 @@ public:
     void Send(T value) {
         std::unique_lock<std::mutex> lock(mutex_);
         
-        if (closed_)
-            throw std::runtime_error("Channel is closed");
+        cv_.wait(lock, [this]() { 
+            return closed_ || buffer_.size() < capacity_; 
+        });
         
-        send_cv_.wait(lock, [this]() { return closed_ || buffer_.size() < capacity_; });
-        
-        if (closed_) 
+        if (closed_) {
             throw std::runtime_error("Channel is closed");
+        }
         
         buffer_.push(std::move(value));
-        
-        recv_cv_.notify_one();
+        cv_.notify_all(); 
     }
 
     std::pair<T, bool> Recv() {
         std::unique_lock<std::mutex> lock(mutex_);
-
-        recv_cv_.wait(lock, [this]() { return closed_ || !buffer_.empty(); });
+        
+        cv_.wait(lock, [this]() { 
+            return closed_ || !buffer_.empty(); 
+        });
         
         if (!buffer_.empty()) {
             T value = std::move(buffer_.front());
             buffer_.pop();
-            
-            send_cv_.notify_one();
-            
+            cv_.notify_all(); 
             return {std::move(value), true};
         }
         
@@ -48,19 +47,15 @@ public:
     void Close() {
         std::unique_lock<std::mutex> lock(mutex_);
         closed_ = true;
-        
-        send_cv_.notify_all();
-        recv_cv_.notify_all();
+        cv_.notify_all();
     }
 
 private:
     std::queue<T> buffer_;
     const size_t capacity_;
     bool closed_;
-    
     std::mutex mutex_;
-    std::condition_variable send_cv_;
-    std::condition_variable recv_cv_;
+    std::condition_variable cv_;
 };
 
-#endif 
+#endif // BUFFERED_CHANNEL_H_
