@@ -41,8 +41,7 @@ public:
                 b[i][j] = dis(gen);
             }
         
-        // Ограничиваем количество одновременно работающих потоков
-        semaphore = CreateSemaphore(NULL, 16, 16, NULL); // Максимум 16 потоков одновременно
+        semaphore = CreateSemaphore(NULL, 16, 16, NULL); 
     }
 
     ~block_multiplier_windows_input() {
@@ -86,10 +85,8 @@ public:
             }
         }
         
-        // Освобождаем семафор после завершения работы
         ReleaseSemaphore(data->self->semaphore, 1, NULL);
         
-        // Сохраняем handle потока для последующего закрытия
         {
             std::lock_guard<std::mutex> lock(data->self->queue_mutex);
             data->self->completed_threads.push(GetCurrentThread());
@@ -138,7 +135,6 @@ public:
         for (int i = 0; i < blocks_per_side; i++) {
             for (int j = 0; j < blocks_per_side; j++) {
                 for (int k = 0; k < blocks_per_side; k++) {
-                    // Ждем, пока освободится место для нового потока
                     WaitForSingleObject(semaphore, INFINITE);
                     
                     int start_row_a, start_col_a, start_row_b, start_col_b;
@@ -175,10 +171,8 @@ public:
             }
         }
 
-        // Ожидаем завершения всех созданных потоков
         WaitForMultipleObjects(threads.size(), threads.data(), TRUE, INFINITE);
 
-        // Закрываем handles потоков
         for (HANDLE thread : threads) {
             CloseHandle(thread);
         }
