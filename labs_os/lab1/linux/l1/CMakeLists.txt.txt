@@ -1,0 +1,43 @@
+cmake_minimum_required(VERSION 3.10)
+project(VectorProject)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+
+add_library(Number STATIC Number.cpp Number.h)
+
+set_target_properties(Number PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+add_library(Vector SHARED Vector.cpp Vector.h)
+
+target_link_libraries(Vector Number)
+
+add_executable(main main.cpp)
+
+# Связываем main с обеими библиотеками
+target_link_libraries(main Number Vector)
+
+if(UNIX AND NOT APPLE)
+    set_target_properties(main PROPERTIES
+        INSTALL_RPATH "$ORIGIN"
+        BUILD_WITH_INSTALL_RPATH TRUE
+    )
+elseif(APPLE)
+    set_target_properties(main PROPERTIES
+        INSTALL_RPATH "@loader_path"
+        BUILD_WITH_INSTALL_RPATH TRUE
+    )
+endif()
+
+add_custom_command(TARGET main POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    $<TARGET_FILE:Vector>
+    $<TARGET_FILE_DIR:main>/
+)
+
+
+message(STATUS "Building static library: libNumber.a")
+message(STATUS "Building shared library: libVector.so (or .dylib/.dll)")
+message(STATUS "Building executable: main")

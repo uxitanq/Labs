@@ -1,0 +1,16 @@
+Статическаю библиотеку Number
+g++ -std=c++11 -Wall -fPIC -c Number.cpp -o Number.o
+ar rcs libNumber.a Number.o
+
+Динамическая библиотека Vector
+g++ -std=c++11 -Wall -fPIC -c Vector.cpp -o Vector.o
+g++ -shared -o libVector.so Vector.o -L. -lNumber
+
+main
+g++ -std=c++11 -Wall -c main.cpp -o main.o
+
+Исполняемый файл
+g++ -o main main.o -L. -lNumber -lVector -Wl,-rpath,.
+
+Запуск
+./main
